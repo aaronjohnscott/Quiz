@@ -816,7 +816,13 @@
      there's no print dialog and nothing to name — it lands in Downloads as
      personality_quiz_2026-08-05_avery-chen.pdf and is ready to upload. */
   function savePdf() {
+    // pdf.js didn't load — nearly always a stale cached copy of index.html
     if (typeof ForestPdf === 'undefined') {
+      el.helpnote.querySelector('.helpnote__title').textContent =
+        '⚠️ The page didn’t finish loading';
+      el.helpnote.querySelector('.helpnote__body').textContent =
+        'Hold Shift and click Reload (or press Ctrl+Shift+R), then try the PDF button again. ' +
+        'If it still fails, tell your teacher.';
       reportTrouble('pdf builder missing');
       return;
     }

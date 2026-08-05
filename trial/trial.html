@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trial</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 3rem;
+    }
+
+    button {
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Trial Page</h1>
+  <p id="message">Hello, world!</p>
+  <button id="button">Click me</button>
+
+  <script>
+    document.getElementById('button').addEventListener('click', () => {
+      document.getElementById('message').textContent = 'It works!';
+    });
+  </script>
+</body>
+</html>
