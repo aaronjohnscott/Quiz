@@ -133,19 +133,34 @@
         </p>
 
         <div class="result__secondary">
-          <button type="button" id="edit-btn" class="btn btn--ghost">← Go back and edit</button>
-          <button type="button" id="download-btn" class="btn btn--ghost">Backup: save as text file</button>
+          <button type="button" id="trouble-btn" class="btn btn--ghost">PDF not working?</button>
           <button type="button" id="restart-btn" class="btn btn--ghost btn--quiet">Start over</button>
+        </div>
+      </div>
+
+      <!-- only opened by the "PDF not working?" button -->
+      <div class="card card--fallback" id="fallback" hidden>
+        <h2 class="fallback__title">Backup plan</h2>
+        <p class="fallback__lede">
+          If the PDF won’t save, use the image instead. It saves every answer
+          below as one tall picture you can upload to Schoology.
+        </p>
+
+        <div class="fallback__actions">
+          <button type="button" id="png-btn" class="btn btn--primary">🖼️ Save all my answers as a PNG</button>
         </div>
 
         <div class="helpnote" id="helpnote">
-          <p class="helpnote__title">⚠️ If the PDF won’t save</p>
+          <p class="helpnote__title">⚠️ If neither one works</p>
           <p class="helpnote__body">
             Don’t close this tab. Tell <span id="teacher-name">your teacher</span>
             right away<span id="teacher-contact"></span> so your work doesn’t get lost —
             they can help you save it another way.
           </p>
         </div>
+
+        <h3 class="fallback__subtitle">Everything you wrote</h3>
+        <ol class="answers" id="answers"></ol>
       </div>
     </section>
 

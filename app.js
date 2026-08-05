@@ -54,15 +54,17 @@
     resultDesc: $('result-desc'),
     tally: $('tally'),
     pdfBtn: $('pdf-btn'),
-    editBtn: $('edit-btn'),
-    downloadBtn: $('download-btn'),
+    troubleBtn: $('trouble-btn'),
     restartBtn: $('restart-btn'),
+    fallback: $('fallback'),
+    pngBtn: $('png-btn'),
+    answers: $('answers'),
     helpnote: $('helpnote'),
     teacherName: $('teacher-name'),
     teacherContact: $('teacher-contact'),
 
-    submitModal: $('submit-modal'),
-    modalPdfBtn: $('modal-pdf-btn'),
+    confirmModal: $('confirm-modal'),
+    confirmYes: $('confirm-yes'),
 
     printName: $('print-name'),
     printDate: $('print-date'),
@@ -372,11 +374,9 @@
       return;
     }
 
+    // last question: check before locking anything in
     if (state.index === QUESTIONS.length - 1) {
-      state.finished = true;
-      save();
-      updateTrail(1);
-      finish({ celebrate: true });
+      openModal();
       return;
     }
 
@@ -464,11 +464,17 @@
 
     renderTally(result);
     renderPrintSheet(result);
+    renderAnswerList();
+
+    // the backup plan starts closed every time
+    el.fallback.hidden = true;
+    el.helpnote.classList.remove('is-urgent');
+    el.troubleBtn.disabled = false;
+    el.troubleBtn.textContent = 'PDF not working?';
     show('results');
 
     if (options && options.celebrate) {
       setTimeout(() => burstConfetti(type.emoji), 260);
-      setTimeout(openModal, 1400); // let them enjoy the result first
     }
   }
 
@@ -560,6 +566,34 @@
     });
   }
 
+  function answerTextFor(q) {
+    const answer = state.answers[q.id];
+    const text = answer ? String(answer.text) : '';
+    return text.trim() ? text : null;
+  }
+
+  /* The same answers, on screen, behind the "PDF not working?" button. */
+  function renderAnswerList() {
+    el.answers.innerHTML = '';
+
+    QUESTIONS.forEach(function (q) {
+      const text = answerTextFor(q);
+      const item = document.createElement('li');
+
+      const question = document.createElement('p');
+      question.className = 'answers__q';
+      question.textContent = q.text;
+
+      const response = document.createElement('p');
+      response.className = 'answers__a' + (text ? '' : ' answers__a--empty');
+      response.textContent = text || '(left blank)';
+
+      item.appendChild(question);
+      item.appendChild(response);
+      el.answers.appendChild(item);
+    });
+  }
+
   /* ---------- confetti ---------- */
 
   function burstConfetti(badge) {
@@ -585,43 +619,163 @@
 
   /* ---------- export ---------- */
 
-  function buildTranscript() {
-    const result = scoreQuiz();
-    const type = TYPES[result.winner];
-    const stamp = new Date().toLocaleString();
-
-    const lines = [];
-    lines.push('FIND YOUR FOREST VIBE — Quiz Responses');
-    lines.push('======================================');
-    lines.push('Name:      ' + state.name);
-    lines.push('Completed: ' + stamp);
-    lines.push('Result:    ' + type.name + ' ' + type.emoji);
-    lines.push(
-      'Tally:     ' +
-        SCORE_ORDER.map((key) => TYPES[key].name + ' ' + result.scores[key]).join(' | ')
-    );
-    lines.push('');
-    lines.push('--------------------------------------');
-    lines.push('');
-
-    QUESTIONS.forEach(function (q, i) {
-      const answer = state.answers[q.id];
-      const text = answer && String(answer.text).trim() ? answer.text : '(left blank)';
-      lines.push(i + 1 + '. ' + q.text);
-      if (q.prompt) {
-        lines.push('   (' + q.prompt + (q.requirement ? ' ' + q.requirement : '') + ')');
-      }
-      lines.push('');
-      lines.push(text);
-      lines.push('');
-    });
-
-    return lines.join('\n');
+  function safeFileName(extension) {
+    const base = (state.name || 'student').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
+    return 'forest-vibe-' + (base || 'student').toLowerCase() + '.' + extension;
   }
 
-  function safeFileName() {
-    const base = (state.name || 'student').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
-    return 'forest-vibe-' + (base || 'student').toLowerCase() + '.txt';
+  /* ============================================================
+     PNG FALLBACK
+
+     This is drawn from the stored answers onto a canvas — it is not a
+     screenshot of the results page. That's deliberate: a picture of
+     "You are a Gem!" proves nothing, so the image is a full answer sheet
+     with every question and everything the student wrote, however tall
+     that ends up being.
+     ============================================================ */
+
+  const SHEET = {
+    width: 820,
+    margin: 46,
+    bg: '#fffdf7',
+    ink: '#22201b',
+    quiet: '#6a6152',
+    accent: '#1d4a35',
+    rule: '#d8cfb6'
+  };
+
+  function wrapLines(ctx, text, maxWidth) {
+    const out = [];
+
+    String(text).split('\n').forEach(function (paragraph) {
+      const words = paragraph.split(/\s+/).filter(Boolean);
+      if (!words.length) { out.push(''); return; }
+
+      let line = words[0];
+      for (let i = 1; i < words.length; i++) {
+        const attempt = line + ' ' + words[i];
+        if (ctx.measureText(attempt).width > maxWidth) {
+          out.push(line);
+          line = words[i];
+        } else {
+          line = attempt;
+        }
+      }
+      out.push(line);
+    });
+
+    return out;
+  }
+
+  /* Runs twice: once to measure (draw = false) and once to paint. Returns the
+     height the sheet needs. */
+  function paintSheet(ctx, result, draw) {
+    const M = SHEET.margin;
+    const colWidth = SHEET.width - M * 2;
+    const type = TYPES[result.winner];
+    let y = M;
+
+    function line(text, font, color, lineHeight, indent) {
+      ctx.font = font;
+      const x = M + (indent || 0);
+      wrapLines(ctx, text, colWidth - (indent || 0)).forEach(function (row) {
+        y += lineHeight;
+        if (draw) {
+          ctx.fillStyle = color;
+          ctx.fillText(row, x, y);
+        }
+      });
+    }
+
+    function rule(gapBefore, gapAfter) {
+      y += gapBefore;
+      if (draw) {
+        ctx.fillStyle = SHEET.rule;
+        ctx.fillRect(M, y, colWidth, 1);
+      }
+      y += gapAfter;
+    }
+
+    line('Find Your Forest Vibe', 'bold 30px Georgia, serif', SHEET.accent, 34);
+    y += 8;
+    line('Name: ' + state.name, 'bold 16px Georgia, serif', SHEET.ink, 22);
+    line('Completed: ' + new Date().toLocaleString(), '15px Georgia, serif', SHEET.quiet, 21);
+    line('Result: ' + type.name + ' ' + type.emoji, '15px Georgia, serif', SHEET.quiet, 21);
+    line(
+      'Points: ' + SCORE_ORDER.map((k) => TYPES[k].name + ' ' + result.scores[k]).join('  ·  '),
+      '15px Georgia, serif', SHEET.quiet, 21
+    );
+    rule(16, 10);
+
+    QUESTIONS.forEach(function (q, i) {
+      const text = answerTextFor(q);
+      y += 16;
+      line(i + 1 + '. ' + q.text, 'bold 17px Georgia, serif', SHEET.ink, 23);
+      if (q.requirement) line(q.requirement, 'italic 13px Georgia, serif', SHEET.quiet, 18);
+
+      const answerTop = y;
+      line(text || '(left blank)', (text ? '' : 'italic ') + '16px Georgia, serif',
+           text ? SHEET.ink : '#9b9384', 24, 16);
+
+      if (draw) { // the little bar down the left of each answer
+        ctx.fillStyle = text ? '#c9c0a5' : '#e6ddc7';
+        ctx.fillRect(M + 2, answerTop + 6, 3, y - answerTop);
+      }
+    });
+
+    rule(26, 6);
+    line('Saved as an image because the PDF could not be created.',
+         'italic 13px Georgia, serif', SHEET.quiet, 19);
+
+    return y + M;
+  }
+
+  function savePng() {
+    const result = scoreQuiz();
+    const scale = 2; // so the text stays sharp when zoomed
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) { reportTrouble('canvas unavailable'); return; }
+
+    // measure first — the sheet is as tall as the writing demands
+    canvas.width = SHEET.width * scale;
+    ctx.scale(scale, scale);
+    ctx.textBaseline = 'alphabetic';
+    const height = paintSheet(ctx, result, false);
+
+    canvas.height = Math.ceil(height) * scale;
+    ctx.scale(scale, scale); // resizing the canvas resets the context
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = SHEET.bg;
+    ctx.fillRect(0, 0, SHEET.width, height);
+    paintSheet(ctx, result, true);
+
+    const filename = safeFileName('png');
+
+    function deliver(url, revoke) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      if (revoke) setTimeout(() => URL.revokeObjectURL(url), 1500);
+      flash(el.pngBtn, 'Image saved ✓');
+    }
+
+    try {
+      if (canvas.toBlob) {
+        canvas.toBlob(function (blob) {
+          if (!blob) { reportTrouble('empty image'); return; }
+          deliver(URL.createObjectURL(blob), true);
+        }, 'image/png');
+      } else {
+        deliver(canvas.toDataURL('image/png'), false);
+      }
+    } catch (err) {
+      reportTrouble(String(err));
+    }
   }
 
   function flash(button, message) {
@@ -634,12 +788,11 @@
     }, 1800);
   }
 
-  // Raise the "go tell your teacher" panel and pin it in view.
+  // An export actually failed: open the backup panel and make the warning loud.
   function reportTrouble(detail) {
+    if (el.fallback.hidden) openFallback();
     el.helpnote.classList.add('is-urgent');
-    if (detail) {
-      el.helpnote.setAttribute('data-detail', detail);
-    }
+    if (detail) el.helpnote.setAttribute('data-detail', detail);
     el.helpnote.scrollIntoView({ behavior: CALM ? 'auto' : 'smooth', block: 'center' });
   }
 
@@ -662,31 +815,18 @@
 
   el.pdfBtn.addEventListener('click', savePdf);
 
-  el.downloadBtn.addEventListener('click', function () {
-    try {
-      const blob = new Blob([buildTranscript()], { type: 'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = safeFileName();
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      flash(el.downloadBtn, 'Saved ✓');
-    } catch (err) {
-      reportTrouble(String(err));
-    }
+  el.pngBtn.addEventListener('click', savePng);
+
+  el.troubleBtn.addEventListener('click', function () {
+    openFallback();
   });
 
-  // Lets a student slip back into the quiz to touch up an answer.
-  el.editBtn.addEventListener('click', function () {
-    state.finished = false;
-    state.index = QUESTIONS.length - 1;
-    save();
-    show('quiz');
-    renderQuestion();
-  });
+  function openFallback() {
+    el.fallback.hidden = false;
+    el.troubleBtn.textContent = 'Backup options are open below ↓';
+    el.troubleBtn.disabled = true;
+    el.fallback.scrollIntoView({ behavior: CALM ? 'auto' : 'smooth', block: 'start' });
+  }
 
   el.restartBtn.addEventListener('click', function () {
     if (!confirm('Start the quiz over? Your current answers will be erased.')) return;
@@ -744,36 +884,38 @@
     });
   }
 
-  /* ---------- the turn-it-in reminder ---------- */
+  /* ---------- "is this your final submission?" ---------- */
 
   let modalReturnFocus = null;
 
   function openModal() {
     modalReturnFocus = document.activeElement;
-    el.submitModal.hidden = false;
+    el.confirmModal.hidden = false;
     document.body.classList.add('modal-open');
-    setTimeout(() => el.modalPdfBtn.focus(), 60);
+    setTimeout(() => el.confirmYes.focus(), 60);
   }
 
   function closeModal() {
-    el.submitModal.hidden = true;
+    el.confirmModal.hidden = true;
     document.body.classList.remove('modal-open');
     if (modalReturnFocus && modalReturnFocus.focus) modalReturnFocus.focus();
   }
 
   function initModal() {
-    el.submitModal.querySelectorAll('[data-close]').forEach(function (node) {
+    el.confirmModal.querySelectorAll('[data-close]').forEach(function (node) {
       node.addEventListener('click', closeModal);
     });
 
     document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && !el.submitModal.hidden) closeModal();
+      if (event.key === 'Escape' && !el.confirmModal.hidden) closeModal();
     });
 
-    el.modalPdfBtn.addEventListener('click', function () {
+    el.confirmYes.addEventListener('click', function () {
       closeModal();
-      // let the dialog clear the screen before the print preview opens
-      setTimeout(savePdf, 120);
+      state.finished = true;
+      save();
+      updateTrail(1);
+      finish({ celebrate: true });
     });
   }
 
