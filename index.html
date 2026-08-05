@@ -134,7 +134,6 @@
 
         <div class="result__secondary">
           <button type="button" id="trouble-btn" class="btn btn--ghost">PDF not working?</button>
-          <button type="button" id="restart-btn" class="btn btn--ghost btn--quiet">Start over</button>
         </div>
       </div>
 
@@ -148,6 +147,7 @@
 
         <div class="fallback__actions">
           <button type="button" id="png-btn" class="btn btn--primary">🖼️ Save all my answers as a PNG</button>
+          <button type="button" id="print-btn" class="btn btn--ghost">Use the print dialog instead</button>
         </div>
 
         <div class="helpnote" id="helpnote">
@@ -162,6 +162,11 @@
         <h3 class="fallback__subtitle">Everything you wrote</h3>
         <ol class="answers" id="answers"></ol>
       </div>
+
+      <p class="danger-zone no-print">
+        Want to start over fresh?
+        <button type="button" id="restart-btn" class="linkbtn linkbtn--danger">Hit this button</button>
+      </p>
     </section>
 
   </main>
@@ -170,18 +175,18 @@
   <div class="modal no-print" id="confirm-modal" hidden>
     <div class="modal__backdrop" data-close="confirm"></div>
     <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-      <div class="modal__icon">🌲</div>
-      <h2 class="modal__title" id="confirm-title">Is this your final submission?</h2>
+      <div class="modal__icon">📄</div>
+      <h2 class="modal__title" id="confirm-title">Ready to export your PDF?</h2>
       <p class="modal__body">
-        You’ve answered all 15 questions. Once you continue, your answers are
-        locked in and you’ll find out your forest personality.
+        You’ve answered all 15 questions. Next you’ll see your forest
+        personality and save your answers as a PDF to turn in.
       </p>
       <p class="modal__note">
-        Want to fix something first? Choose <i>Let me check again</i> and use the
+        Want to fix an answer first? Choose <i>Let me check again</i> and use the
         <b>Back</b> button to look through your answers.
       </p>
       <div class="modal__actions">
-        <button type="button" class="btn btn--primary" id="confirm-yes">Yes — submit my answers</button>
+        <button type="button" class="btn btn--primary" id="confirm-yes">Yes — I’m ready</button>
         <button type="button" class="btn btn--ghost" data-close="confirm">Let me check again</button>
       </div>
     </div>
@@ -207,6 +212,7 @@
   </button>
 
   <script src="questions.js"></script>
+  <script src="pdf.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

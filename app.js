@@ -58,6 +58,7 @@
     restartBtn: $('restart-btn'),
     fallback: $('fallback'),
     pngBtn: $('png-btn'),
+    printBtn: $('print-btn'),
     answers: $('answers'),
     helpnote: $('helpnote'),
     teacherName: $('teacher-name'),
@@ -619,9 +620,20 @@
 
   /* ---------- export ---------- */
 
-  function safeFileName(extension) {
-    const base = (state.name || 'student').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
-    return 'forest-vibe-' + (base || 'student').toLowerCase() + '.' + extension;
+  // personality_quiz_2026-08-05_avery-chen.pdf — sorts by date and says whose
+  // it is, so a folder of these is easy to work through.
+  function quizFileName(extension) {
+    const now = new Date();
+    const stamp = now.getFullYear() + '-' +
+      String(now.getMonth() + 1).padStart(2, '0') + '-' +
+      String(now.getDate()).padStart(2, '0');
+
+    const who = (state.name || 'student')
+      .replace(/[^a-z0-9]+/gi, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase() || 'student';
+
+    return 'personality_quiz_' + stamp + '_' + who + '.' + extension;
   }
 
   /* ============================================================
@@ -751,7 +763,7 @@
     ctx.fillRect(0, 0, SHEET.width, height);
     paintSheet(ctx, result, true);
 
-    const filename = safeFileName('png');
+    const filename = quizFileName('png');
 
     function deliver(url, revoke) {
       const link = document.createElement('a');
@@ -800,20 +812,65 @@
      "Microsoft Print to PDF"). It needs no library and no internet, which
      matters on a locked-down school machine. The page title becomes the
      suggested filename, so it's set just for the duration of the dialog. */
+  /* Builds the PDF in the page and hands it to the browser as a download, so
+     there's no print dialog and nothing to name — it lands in Downloads as
+     personality_quiz_2026-08-05_avery-chen.pdf and is ready to upload. */
   function savePdf() {
-    const originalTitle = document.title;
-    document.title = 'Forest Vibe — ' + (state.name || 'Student');
+    if (typeof ForestPdf === 'undefined') {
+      reportTrouble('pdf builder missing');
+      return;
+    }
 
+    try {
+      const result = scoreQuiz();
+      const type = TYPES[result.winner];
+
+      const bytes = ForestPdf.build({
+        title: 'Find Your Forest Vibe - Personality Quiz',
+        meta: [
+          'Name: ' + state.name,
+          'Completed: ' + new Date().toLocaleString(),
+          'Result: ' + type.name,
+          'Points: ' + SCORE_ORDER.map((k) => TYPES[k].name + ' ' + result.scores[k]).join('   ')
+        ],
+        items: QUESTIONS.map(function (q) {
+          return {
+            question: q.text,
+            requirement: q.requirement || '',
+            answer: answerTextFor(q) || '(left blank)'
+          };
+        })
+      });
+
+      const blob = new Blob([bytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = quizFileName('pdf');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+      flash(el.pdfBtn, '✓ PDF saved to your Downloads');
+    } catch (err) {
+      reportTrouble(String(err));
+    }
+  }
+
+  el.pdfBtn.addEventListener('click', savePdf);
+
+  // the old route, kept in the backup panel for anyone whose downloads are blocked
+  el.printBtn.addEventListener('click', function () {
+    const originalTitle = document.title;
+    document.title = quizFileName('').replace(/\.$/, '');
     try {
       window.print();
     } catch (err) {
       reportTrouble(String(err));
     }
-
     setTimeout(function () { document.title = originalTitle; }, 800);
-  }
-
-  el.pdfBtn.addEventListener('click', savePdf);
+  });
 
   el.pngBtn.addEventListener('click', savePng);
 
@@ -829,7 +886,10 @@
   }
 
   el.restartBtn.addEventListener('click', function () {
-    if (!confirm('Start the quiz over? Your current answers will be erased.')) return;
+    const warning =
+      'This erases everything you wrote and starts the quiz over from question 1.\n\n' +
+      'Make sure you have already saved your PDF.\n\nErase and start over?';
+    if (!confirm(warning)) return;
     clearSaved();
     state = blankState();
     el.startForm.reset();
