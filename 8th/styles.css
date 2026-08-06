@@ -1,0 +1,931 @@
+/* ============================================================
+   Lake Life! — Discover Your Lakeside Personality
+   ============================================================ */
+
+:root {
+  --ink:        #22302f;
+  --night-900:  #0c1e29;
+  --slate-800:  #143140;
+  --lake-700:   #1d4c5c;
+  --lake-500:   #2c8090;
+  --lake-300:   #7cc0c4;
+  --mist-tint:  #cfe4e2;
+  --linen:      #f4f1e6;
+  --linen-dim:  #ddd7c6;
+  --paper:      #fffdf6;
+  --dawn:       #d98b4a;
+  --dawn-soft:  #f3cb9a;
+  --berry:      #b4453c;
+
+  --water-line: 40vh;   /* where the shore meets the lake */
+
+  --radius:     20px;
+  --radius-sm:  12px;
+  --shadow:     0 26px 70px -30px rgba(6, 22, 30, .85);
+  --ring:       0 0 0 3px rgba(217, 139, 74, .5);
+
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* subtle paper grain, inlined so the page stays a single self-contained folder */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+}
+
+* { box-sizing: border-box; }
+
+/* beats layout rules like `.choices { display: grid }` */
+[hidden] { display: none !important; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  color: var(--linen);
+  background: linear-gradient(to bottom,
+    #0b2231 0%, #16455a 26%, #35798c 48%, #8fb4b4 66%, #e8c095 82%, #d99a63 100%);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+
+  /* page text can't be selected, so it can't be copied out either */
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* …except inside the boxes students type in, where they still need to select
+   and correct their own words. Pasting into them is blocked in app.js. */
+textarea, input[type="text"] {
+  -webkit-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* ============================================================
+   1. THE LAKE AT DAWN (decorative background)
+   ============================================================ */
+
+.lakeside { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+
+/* early sun, sitting just above the far treeline */
+.sun {
+  position: absolute; bottom: calc(var(--water-line) + 9vh);
+  right: 20vw;
+  width: 84px; height: 84px; border-radius: 50%;
+  background: radial-gradient(circle at 42% 40%, #fff2d4, #f3cb9a 52%, #d98b4a 100%);
+  box-shadow: 0 0 70px 22px rgba(243, 203, 154, .38);
+  animation: pulse 10s ease-in-out infinite alternate;
+}
+@keyframes pulse {
+  from { box-shadow: 0 0 48px 14px rgba(243, 203, 154, .3); }
+  to   { box-shadow: 0 0 92px 30px rgba(243, 203, 154, .5); }
+}
+
+/* the warm haze the sunrise throws across the sky */
+.dawnglow {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 42% at 80% 62%,
+    rgba(243, 203, 154, .34) 0%, rgba(243, 203, 154, .10) 42%, transparent 70%);
+  animation: breathe 15s ease-in-out infinite alternate;
+}
+@keyframes breathe { from { opacity: .68; } to { opacity: 1; } }
+
+/* ---------- the pines on the far shore ---------- */
+/* One jagged treeline, tiled sideways. Two copies at different sizes and
+   darknesses give the far shore a bit of depth without any extra markup. */
+.ridge {
+  position: absolute; left: 0; right: 0; bottom: var(--water-line);
+  background-repeat: repeat-x;
+  background-position: bottom center;
+}
+.ridge--far {
+  height: 11vh;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 100' preserveAspectRatio='none'%3E%3Cpath d='M0,100 L14,52 L28,100 L44,38 L60,100 L74,60 L88,100 L106,30 L124,100 L138,58 L152,100 L170,44 L188,100 L202,64 L216,100 L234,34 L252,100 L266,56 L280,100 L298,42 L316,100 L330,62 L344,100 L362,36 L380,100 L392,58 L400,100 Z' fill='%23214250' fill-opacity='.72'/%3E%3C/svg%3E");
+  background-size: 360px 100%;
+}
+.ridge--near {
+  height: 16vh;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 100' preserveAspectRatio='none'%3E%3Cpath d='M0,100 L18,40 L36,100 L52,64 L68,100 L90,22 L112,100 L128,56 L144,100 L166,32 L188,100 L204,68 L220,100 L242,26 L264,100 L280,60 L296,100 L318,36 L340,100 L356,66 L372,100 L388,44 L400,100 Z' fill='%230e2833'/%3E%3C/svg%3E");
+  background-size: 520px 100%;
+}
+
+/* ---------- the water ---------- */
+.lake {
+  position: absolute; inset: auto 0 0 0; height: var(--water-line);
+  overflow: hidden;
+  background: linear-gradient(to bottom,
+    #86aeae 0%, #4a8496 16%, #1f5568 46%, #0d2a37 100%);
+}
+
+/* the sun's reflection, broken into ripples the way it is on still water */
+.sheen {
+  position: absolute; top: 0; bottom: 0; right: 16vw; width: 130px;
+  background: repeating-linear-gradient(to bottom,
+    rgba(255, 236, 205, .34) 0 3px, transparent 3px 12px);
+  filter: blur(.6px);
+  -webkit-mask-image: radial-gradient(ellipse 55% 62% at 50% 12%, #000 10%, transparent 78%);
+  mask-image: radial-gradient(ellipse 55% 62% at 50% 12%, #000 10%, transparent 78%);
+  animation: shimmer-col 6s linear infinite;
+}
+@keyframes shimmer-col { to { background-position: 0 15px; } }
+
+/* rings spreading out from wherever a fish just came up */
+.ripples { position: absolute; inset: 0; }
+.ripples i {
+  position: absolute;
+  width: 58px; height: 16px;
+  border: 1px solid rgba(228, 244, 242, .5);
+  border-radius: 50%;
+  opacity: 0;
+  animation: ring ease-out infinite;
+}
+.ripples i:nth-child(1) { left: 12%; top: 34%; animation-duration: 7s;  animation-delay: 0s; }
+.ripples i:nth-child(2) { left: 38%; top: 22%; animation-duration: 9s;  animation-delay: 2.5s; }
+.ripples i:nth-child(3) { left: 62%; top: 46%; animation-duration: 8s;  animation-delay: 5s; }
+.ripples i:nth-child(4) { left: 82%; top: 28%; animation-duration: 11s; animation-delay: 1.2s; }
+.ripples i:nth-child(5) { left: 26%; top: 58%; animation-duration: 10s; animation-delay: 6.5s; }
+
+@keyframes ring {
+  0%   { transform: scale(.15); opacity: 0; }
+  12%  { opacity: .6; }
+  100% { transform: scale(7); opacity: 0; }
+}
+
+/* low mist sitting on the surface */
+.mist {
+  position: absolute; top: -8%; left: -12%; right: -12%; height: 42%;
+  background: linear-gradient(to bottom, rgba(207, 228, 226, .3), transparent 74%);
+  filter: blur(7px);
+  animation: drift-mist 24s ease-in-out infinite alternate;
+}
+@keyframes drift-mist {
+  from { transform: translateX(-4%); opacity: .75; }
+  to   { transform: translateX(4%);  opacity: 1; }
+}
+
+/* ---------- cattails along the near bank ---------- */
+.reeds { position: absolute; bottom: 0; height: 30vh; }
+.reeds--left  { left: 2vw;  width: 90px; animation: bend 9s ease-in-out infinite alternate; }
+.reeds--right { right: 3vw; width: 120px; animation: bend 12s ease-in-out infinite alternate-reverse; }
+
+@keyframes bend {
+  from { transform: rotate(-1.6deg); }
+  to   { transform: rotate(1.6deg); }
+}
+
+.reed {
+  position: absolute; bottom: 0;
+  width: 3px;
+  background: linear-gradient(to top, #071820, #123240);
+  border-radius: 3px;
+  transform-origin: 50% 100%;
+}
+/* the seed head at the top of the stalk */
+.reed::after {
+  content: ""; position: absolute; top: -4px; left: -3px;
+  width: 9px; height: 38px;
+  border-radius: 999px;
+  background: #0b222c;
+}
+
+.reeds--left  .reed:nth-child(1) { left:  4px; height: 24vh; transform: rotate(-5deg); }
+.reeds--left  .reed:nth-child(2) { left: 26px; height: 19vh; transform: rotate(3deg); }
+.reeds--left  .reed:nth-child(3) { left: 48px; height: 27vh; transform: rotate(-2deg); }
+
+.reeds--right .reed:nth-child(1) { right:  6px; height: 28vh; transform: rotate(4deg); }
+.reeds--right .reed:nth-child(2) { right: 30px; height: 22vh; transform: rotate(-3deg); }
+.reeds--right .reed:nth-child(3) { right: 56px; height: 30vh; transform: rotate(6deg); }
+.reeds--right .reed:nth-child(4) { right: 82px; height: 18vh; transform: rotate(-4deg); }
+
+/* ---------- dragonflies skimming the surface ---------- */
+.skimmers { position: absolute; inset: auto 0 0 0; height: 52vh; }
+.skimmers i {
+  position: absolute;
+  width: 13px; height: 2px; border-radius: 2px;
+  background: rgba(255, 240, 214, .55);
+  opacity: 0;
+  animation: skim linear infinite;
+}
+/* wings */
+.skimmers i::before, .skimmers i::after {
+  content: ""; position: absolute; left: 3px;
+  width: 8px; height: 3px;
+  border-radius: 50%;
+  background: rgba(255, 240, 214, .3);
+}
+.skimmers i::before { top: -3px; transform: rotate(-16deg); }
+.skimmers i::after  { top:  2px; transform: rotate(16deg); }
+
+.skimmers i:nth-child(1) { left:  2vw; bottom: 30%; animation-duration: 24s; animation-delay: 0s; }
+.skimmers i:nth-child(2) { left: 14vw; bottom: 14%; animation-duration: 31s; animation-delay: 7s; }
+.skimmers i:nth-child(3) { left:  6vw; bottom: 46%; animation-duration: 27s; animation-delay: 14s; }
+.skimmers i:nth-child(4) { left: 20vw; bottom: 24%; animation-duration: 35s; animation-delay: 20s; }
+
+/* darts, then hangs still for a beat — the way they actually move */
+@keyframes skim {
+  0%   { transform: translate(0, 0); opacity: 0; }
+  6%   { opacity: .85; }
+  18%  { transform: translate(16vw, -4vh); }
+  25%  { transform: translate(16vw, -4vh); }
+  42%  { transform: translate(34vw, 3vh); }
+  50%  { transform: translate(34vw, 3vh); }
+  68%  { transform: translate(54vw, -5vh); }
+  76%  { transform: translate(54vw, -5vh); }
+  94%  { opacity: .5; }
+  100% { transform: translate(78vw, 2vh); opacity: 0; }
+}
+
+/* ---------- leaves coming down off the trees ---------- */
+.driftfall { position: absolute; inset: 0; }
+.driftfall span {
+  position: absolute; top: -8vh; font-size: 20px; opacity: .5;
+  animation: tumble linear infinite;
+}
+.driftfall span:nth-child(1) { left: 11%; animation-duration: 18s; animation-delay: 0s;  font-size: 18px; }
+.driftfall span:nth-child(2) { left: 27%; animation-duration: 24s; animation-delay: 6s;  font-size: 22px; }
+.driftfall span:nth-child(3) { left: 46%; animation-duration: 20s; animation-delay: 12s; font-size: 16px; }
+.driftfall span:nth-child(4) { left: 64%; animation-duration: 26s; animation-delay: 3s;  font-size: 19px; }
+.driftfall span:nth-child(5) { left: 80%; animation-duration: 22s; animation-delay: 16s; font-size: 17px; }
+.driftfall span:nth-child(6) { left: 94%; animation-duration: 28s; animation-delay: 9s;  font-size: 21px; }
+
+@keyframes tumble {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  10%  { opacity: .55; }
+  25%  { transform: translate(-42px, 25vh) rotate(120deg); }
+  50%  { transform: translate(48px, 52vh) rotate(220deg); }
+  75%  { transform: translate(-32px, 78vh) rotate(340deg); }
+  95%  { opacity: .3; }
+  100% { transform: translate(22px, 112vh) rotate(460deg); opacity: 0; }
+}
+
+/* ============================================================
+   2. LAYOUT
+   ============================================================ */
+
+.stage {
+  position: relative; z-index: 1;
+  min-height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  padding: clamp(18px, 4vw, 48px);
+  padding-bottom: 84px; /* room for the motion toggle */
+}
+
+/* ---------- stop-animations toggle ---------- */
+.motion-toggle {
+  position: fixed; z-index: 70;
+  bottom: 16px; left: 50%; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 8px;
+  font: inherit; font-size: .78rem; font-weight: 600;
+  color: rgba(244, 241, 230, .78);
+  background: rgba(8, 30, 40, .62);
+  border: 1px solid rgba(124, 192, 196, .3);
+  border-radius: 999px;
+  padding: 7px 15px; cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: color .18s, background .18s, border-color .18s, opacity .18s;
+  opacity: .72;
+}
+.motion-toggle:hover { opacity: 1; color: #fff; border-color: var(--lake-300); background: rgba(8, 30, 40, .88); }
+.motion-toggle:focus-visible { outline: none; opacity: 1; box-shadow: var(--ring); }
+
+.motion-toggle__dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--lake-300);
+  box-shadow: 0 0 8px rgba(124, 192, 196, .9);
+  animation: blip 1.6s ease-in-out infinite;
+}
+@keyframes blip { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+/* the switch itself: kill every keyframe animation, keep interface transitions */
+body.still *,
+body.still *::before,
+body.still *::after { animation: none !important; }
+
+body.still .driftfall,
+body.still .ripples,
+body.still .skimmers,
+body.still .confetti { display: none; }
+
+body.still .motion-toggle__dot { background: #8d8676; box-shadow: none; }
+
+.screen { display: none; width: 100%; max-width: 760px; }
+.screen.is-active { display: block; animation: rise-in .55s cubic-bezier(.2, .7, .3, 1) both; }
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(22px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- cards ---------- */
+.card {
+  position: relative;
+  background: linear-gradient(170deg, rgba(255,253,246,.98), rgba(243,238,225,.95));
+  color: var(--ink);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: clamp(24px, 4.5vw, 44px);
+  border: 1px solid rgba(255,255,255,.6);
+  isolation: isolate;
+}
+
+/* paper grain */
+.card::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background-image: var(--grain);
+  opacity: .2; mix-blend-mode: multiply;
+  border-radius: inherit; pointer-events: none;
+}
+
+.card + .card { margin-top: 20px; }
+
+.card--question { overflow: hidden; }
+.card--question::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 6px;
+  background: linear-gradient(var(--lake-500), var(--lake-300), var(--dawn-soft));
+  background-size: 100% 200%;
+  animation: creep 6s ease-in-out infinite alternate;
+}
+@keyframes creep { from { background-position: 0 0; } to { background-position: 0 100%; } }
+
+.card--question.is-entering { animation: slidein .42s cubic-bezier(.2, .75, .3, 1) both; }
+@keyframes slidein {
+  from { opacity: 0; transform: translateX(30px) rotate(.4deg); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ============================================================
+   3. TYPOGRAPHY
+   ============================================================ */
+
+.eyebrow {
+  margin: 0 0 10px; font-size: .74rem; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--lake-500); font-weight: 700;
+}
+
+.title {
+  font-family: var(--serif);
+  font-size: clamp(2.1rem, 6.5vw, 3.4rem);
+  line-height: 1.05; margin: 0 0 14px; color: var(--lake-700);
+  letter-spacing: -.01em;
+}
+.title em {
+  font-style: italic;
+  background: linear-gradient(100deg, var(--dawn) 20%, #f6dcb6 45%, var(--dawn) 70%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: shimmer 5s linear infinite;
+}
+@keyframes shimmer { to { background-position: -250% 0; } }
+
+.lede { margin: 0 0 26px; font-size: 1.03rem; line-height: 1.6; color: #474f4d; }
+.lede strong { color: var(--lake-700); }
+
+.question {
+  font-family: var(--serif);
+  font-size: clamp(1.4rem, 3.4vw, 1.95rem);
+  line-height: 1.25; margin: 0 0 8px; color: var(--lake-700);
+}
+.question:last-of-type { margin-bottom: 22px; }
+
+/* directions block for the written questions */
+.directions {
+  margin: 0 0 22px;
+  padding: 14px 18px;
+  background: linear-gradient(100deg, rgba(243, 203, 154, .3), rgba(243, 203, 154, .08));
+  border-left: 4px solid var(--dawn);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.directions__text {
+  margin: 0; font-size: 1.02rem; line-height: 1.55; color: #4e5554;
+}
+.directions__req {
+  margin: 8px 0 0;
+  font-size: 1.02rem; font-weight: 800; line-height: 1.4;
+  color: var(--lake-700);
+  display: flex; align-items: center; gap: 8px;
+}
+.directions__req::before { content: "✍️"; font-size: 1.05rem; }
+
+/* ============================================================
+   4. FORM CONTROLS
+   ============================================================ */
+
+.start-form { display: grid; gap: 16px; }
+.field { display: grid; gap: 6px; }
+.field__label { font-size: .82rem; font-weight: 700; color: var(--lake-700); letter-spacing: .02em; }
+
+input[type="text"], textarea {
+  font: inherit; color: var(--ink);
+  background: var(--paper);
+  border: 2px solid #d7d2c0; border-radius: var(--radius-sm);
+  padding: 12px 14px; width: 100%;
+  transition: border-color .18s, box-shadow .18s, transform .18s;
+}
+input[type="text"]:focus, textarea:focus {
+  outline: none; border-color: var(--lake-500); box-shadow: var(--ring);
+}
+input[type="text"]:focus { transform: translateY(-1px); }
+
+/* notebook-paper writing area */
+textarea {
+  resize: vertical;
+  min-height: 240px;
+  font-size: 16px;
+  line-height: 28px;
+  padding: 14px 16px;
+  background-image: repeating-linear-gradient(
+    transparent 0px, transparent 27px, rgba(44, 128, 144, .18) 27px, rgba(44, 128, 144, .18) 28px
+  );
+  background-attachment: local;
+  background-origin: content-box;
+}
+
+/* only appears once a student tries to paste */
+.nopaste {
+  margin: 12px 0 0; padding: 9px 13px;
+  border-radius: 8px;
+  background: #fdeceb; border-left: 3px solid var(--berry);
+  font-size: .87rem; line-height: 1.45; font-weight: 600; color: #8e2f28;
+}
+.nopaste.is-flagged { animation: shake .45s cubic-bezier(.36, .07, .19, .97); }
+
+/* ---------- choices ---------- */
+.choices { display: grid; gap: 10px; margin-bottom: 22px; }
+
+.choice {
+  position: relative; display: block;
+  animation: dealin .42s cubic-bezier(.2, .8, .3, 1) both;
+  animation-delay: calc(var(--i, 0) * 65ms + 90ms);
+}
+@keyframes dealin {
+  from { opacity: 0; transform: translateY(14px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+.choice input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.choice__box {
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; gap: 14px;
+  padding: 15px 17px;
+  background: var(--paper);
+  border: 2px solid #dbd6c4; border-radius: var(--radius-sm);
+  cursor: pointer; line-height: 1.45;
+  transition: transform .16s ease, border-color .18s, box-shadow .18s;
+}
+.choice__box:hover { border-color: var(--lake-300); transform: translateX(4px); }
+
+/* wash that sweeps in behind the selected answer */
+.choice__box::before {
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  background: linear-gradient(100deg, #dcefef, #f6fbfa);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .32s cubic-bezier(.2, .8, .3, 1);
+}
+.choice__box > * { position: relative; z-index: 1; }
+
+.choice__key {
+  flex: 0 0 auto;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: .82rem; font-weight: 700;
+  background: #e7e0cd; color: #7a746a;
+  transition: background .2s, color .2s, transform .2s;
+}
+.choice__key::before { content: attr(data-num); }
+
+.choice input:checked + .choice__box {
+  border-color: var(--lake-500);
+  box-shadow: 0 12px 28px -18px rgba(29, 76, 92, .95);
+}
+.choice input:checked + .choice__box::before { transform: scaleX(1); }
+.choice input:checked + .choice__box .choice__key {
+  background: var(--lake-500); color: #fff;
+}
+.choice input:checked + .choice__box .choice__key::before { content: "✓"; }
+.choice input:focus-visible + .choice__box { box-shadow: var(--ring); }
+
+.choice__key.is-picked { animation: stamp .42s cubic-bezier(.2, 1.5, .4, 1); }
+@keyframes stamp {
+  0%   { transform: scale(.5) rotate(-25deg); }
+  60%  { transform: scale(1.22) rotate(6deg); }
+  100% { transform: scale(1); }
+}
+
+.choices.nudge { animation: shake .4s; }
+
+/* ---------- errors ---------- */
+.error {
+  margin: 14px 0 0; padding: 10px 14px;
+  background: #fdeceb; border-left: 3px solid var(--berry);
+  border-radius: 8px; color: #8e2f28; font-size: .9rem;
+}
+.error.shake, .shake { animation: shake .42s cubic-bezier(.36, .07, .19, .97); }
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-7px); }
+  40%, 60% { transform: translateX(7px); }
+}
+
+/* ============================================================
+   5. BUTTONS
+   ============================================================ */
+
+.btn {
+  position: relative; overflow: hidden;
+  font: inherit; font-weight: 700; letter-spacing: .01em;
+  border: 2px solid transparent; border-radius: 999px;
+  padding: 12px 22px; cursor: pointer;
+  transition: transform .16s cubic-bezier(.2, .9, .3, 1.4), box-shadow .18s, background .18s, color .18s;
+}
+.btn:active { transform: translateY(1px) scale(.98); }
+.btn:focus-visible { outline: none; box-shadow: var(--ring); }
+.btn:disabled { opacity: .65; cursor: default; }
+
+.btn--primary {
+  background: linear-gradient(160deg, var(--lake-700), var(--lake-500));
+  color: #fff;
+  box-shadow: 0 14px 28px -16px rgba(20, 60, 74, .95);
+}
+.btn--primary:hover { transform: translateY(-2px); box-shadow: 0 22px 36px -18px rgba(20, 60, 74, 1); }
+
+/* light sweeping across the button on hover */
+.btn--primary::after {
+  content: ""; position: absolute; top: 0; left: -60%;
+  width: 45%; height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.32), transparent);
+  transform: skewX(-20deg);
+}
+.btn--primary:hover::after { animation: sheen .75s ease-out; }
+@keyframes sheen { to { left: 130%; } }
+
+.btn--ghost { background: transparent; color: var(--lake-700); border-color: #cec9b7; }
+.btn--ghost:hover { border-color: var(--lake-500); background: rgba(44, 128, 144, .09); transform: translateY(-1px); }
+.btn--quiet { color: #8d8676; border-color: transparent; }
+.btn--big { justify-self: start; padding: 15px 30px; font-size: 1.02rem; }
+.btn--big { animation: bob 3.4s ease-in-out infinite; }
+@keyframes bob { 0%, 100% { transform: none; } 50% { transform: translateY(-3px); } }
+.btn--big:hover { animation: none; }
+
+.linkbtn {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; font-weight: 700; color: var(--lake-500);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.linkbtn--quiet { color: #8d8676; font-weight: 400; }
+
+/* kept well away from the export buttons so nobody wipes their work by reflex */
+.danger-zone {
+  margin: 34px 0 0; text-align: center;
+  font-size: .82rem; line-height: 1.6; color: rgba(244, 241, 230, .5);
+}
+.linkbtn--danger { color: rgba(244, 241, 230, .66); font-weight: 600; }
+.linkbtn--danger:hover { color: var(--dawn-soft); }
+.resume { margin: 20px 0 0; font-size: .9rem; color: #6a6459; }
+
+.nav { display: flex; gap: 12px; align-items: center; }
+.nav .btn--primary { margin-left: auto; }
+
+/* ============================================================
+   6. QUIZ CHROME — the paddle across
+   ============================================================ */
+
+.quizbar { margin-bottom: 18px; }
+.quizbar__row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 10px;
+}
+.counter { font-size: .86rem; color: var(--linen-dim); letter-spacing: .04em; }
+.counter b { color: #fff; display: inline-block; }
+.counter b.tick { animation: tick .45s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes tick {
+  0%   { transform: translateY(9px) scale(.7); opacity: .2; }
+  100% { transform: none; opacity: 1; }
+}
+
+/* which stretch of the day this question belongs to */
+.section-label {
+  margin: 0 0 12px;
+  font-size: .78rem; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(244, 241, 230, .62);
+}
+
+.pill {
+  font-size: .7rem; text-transform: uppercase; letter-spacing: .12em;
+  font-weight: 700; padding: 5px 11px; border-radius: 999px;
+  background: rgba(124, 192, 196, .16); color: var(--lake-300);
+  border: 1px solid rgba(124, 192, 196, .32);
+}
+
+.trail { display: flex; align-items: center; gap: 12px; }
+.trail__track { position: relative; flex: 1; }
+.trail__goal { font-size: 1.15rem; filter: saturate(1.2); }
+
+.progress {
+  height: 8px; border-radius: 999px; overflow: hidden;
+  background: rgba(255, 255, 255, .15);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.3);
+}
+.progress__fill {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--lake-500), var(--lake-300) 60%, var(--dawn-soft));
+  background-size: 220% 100%;
+  border-radius: 999px;
+  transition: width .55s cubic-bezier(.2, .8, .25, 1);
+  animation: slide 3.5s linear infinite;
+}
+@keyframes slide { to { background-position: 220% 0; } }
+
+.trail__walker {
+  position: absolute; top: 50%; left: 0;
+  transform: translate(-50%, -62%);
+  transition: left .55s cubic-bezier(.2, .8, .25, 1);
+  will-change: left;
+}
+.trail__walker b { display: block; font-size: 1.2rem; }
+.trail__walker.is-hopping b { animation: hop .55s ease-out; }
+@keyframes hop {
+  0%   { transform: translateY(0) scale(1); }
+  35%  { transform: translateY(-11px) scale(1.12) rotate(-8deg); }
+  70%  { transform: translateY(-3px) scale(.97) rotate(4deg); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.hint { margin: 16px 2px 0; font-size: .8rem; color: rgba(244, 241, 230, .58); }
+kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .76rem;
+  background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22);
+  border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px;
+}
+
+/* ============================================================
+   7. RESULTS
+   ============================================================ */
+
+.card--result { text-align: center; overflow: hidden; }
+
+/* slow shine crossing the result card */
+.card--result::before {
+  content: ""; position: absolute; top: -50%; left: -70%;
+  width: 45%; height: 200%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+  transform: skewX(-18deg);
+  animation: glide 5.5s ease-in-out 1s infinite;
+  pointer-events: none;
+}
+@keyframes glide {
+  0%   { left: -70%; }
+  55%  { left: 150%; }
+  100% { left: 150%; }
+}
+
+.result__badge {
+  font-size: 4.4rem; line-height: 1; margin-bottom: 6px;
+  animation: pop .7s cubic-bezier(.2, 1.5, .4, 1) both .1s, bobbing 4s ease-in-out 1s infinite;
+  filter: drop-shadow(0 10px 18px rgba(20, 60, 74, .3));
+}
+@keyframes pop {
+  from { transform: scale(.3) rotate(-18deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0); opacity: 1; }
+}
+@keyframes bobbing {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-8px) rotate(2deg); }
+}
+
+.result__title {
+  font-family: var(--serif); font-size: clamp(2rem, 6vw, 2.9rem);
+  margin: 0 0 14px; color: var(--lake-700);
+  animation: rise-in .6s cubic-bezier(.2,.7,.3,1) both .25s;
+}
+.result__desc {
+  margin: 0 auto 28px; max-width: 54ch;
+  font-size: 1.05rem; line-height: 1.65; color: #474f4d;
+  animation: rise-in .6s cubic-bezier(.2,.7,.3,1) both .35s;
+}
+
+.tally { display: grid; gap: 10px; margin-bottom: 28px; text-align: left; }
+.tally__row {
+  display: grid; grid-template-columns: 160px 1fr 32px; align-items: center; gap: 10px;
+  animation: rise-in .5s cubic-bezier(.2,.7,.3,1) both;
+  animation-delay: calc(var(--i, 0) * 90ms + 400ms);
+}
+.tally__name { font-size: .84rem; font-weight: 700; color: #6a6459; }
+.tally__track { height: 11px; background: #e5dfcc; border-radius: 999px; overflow: hidden; }
+.tally__bar {
+  display: block; height: 100%; width: 0; border-radius: 999px;
+  background: linear-gradient(90deg, var(--lake-500), var(--lake-300));
+  transition: width .9s cubic-bezier(.2, .8, .25, 1);
+}
+.tally__row.is-winner .tally__name { color: var(--lake-700); }
+.tally__row.is-winner .tally__bar {
+  background: linear-gradient(90deg, var(--dawn), var(--dawn-soft));
+  box-shadow: 0 0 12px rgba(217, 139, 74, .5);
+}
+.tally__num {
+  font-size: .84rem; font-weight: 700; color: #8d8676;
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+
+.result__actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.result__actions .btn--big { justify-self: center; }
+
+.turnin {
+  margin: 14px 0 0; font-size: .92rem; line-height: 1.5; color: #6a6459;
+  max-width: 42ch; margin-inline: auto;
+}
+
+.result__secondary {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  margin-top: 24px; padding-top: 22px;
+  border-top: 1px dashed #dbd6c4;
+}
+.result__secondary .btn { font-size: .86rem; padding: 9px 16px; }
+
+/* ---------- backup panel ---------- */
+.card--fallback { animation: rise-in .45s cubic-bezier(.2, .7, .3, 1) both; }
+
+.fallback__title {
+  font-family: var(--serif); font-size: 1.5rem; margin: 0 0 8px; color: var(--lake-700);
+}
+.fallback__lede { margin: 0 0 20px; font-size: .96rem; line-height: 1.6; color: #474f4d; }
+.fallback__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.fallback__subtitle {
+  font-family: var(--serif); font-size: 1.2rem;
+  margin: 28px 0 14px; padding-top: 22px;
+  border-top: 1px dashed #dbd6c4; color: var(--lake-700);
+}
+
+.answers { margin: 0; padding-left: 22px; display: grid; gap: 18px; }
+.answers li { color: #474f4d; }
+.answers li::marker { color: var(--lake-500); font-weight: 700; }
+.answers__q { font-weight: 700; color: var(--lake-700); margin: 0 0 5px; line-height: 1.4; }
+.answers__a {
+  margin: 0; line-height: 1.6; white-space: pre-wrap;
+  padding-left: 12px; border-left: 2px solid #dbd6c4;
+}
+.answers__a--empty { color: #a09884; font-style: italic; }
+
+/* ---------- help note ---------- */
+.helpnote {
+  margin: 22px 0 0; text-align: left;
+  padding: 14px 18px; border-radius: var(--radius-sm);
+  background: rgba(180, 69, 60, .07);
+  border: 1px solid rgba(180, 69, 60, .22);
+  transition: background .3s, border-color .3s, transform .3s;
+}
+.helpnote__title { margin: 0 0 6px; font-size: .92rem; font-weight: 800; color: #8e2f28; }
+.helpnote__body { margin: 0; font-size: .89rem; line-height: 1.55; color: #6a5450; }
+
+.helpnote.is-urgent {
+  background: rgba(180, 69, 60, .16);
+  border-color: var(--berry);
+  transform: scale(1.02);
+  animation: shake .5s;
+}
+.helpnote.is-urgent .helpnote__title::after { content: " — this means you, right now"; font-weight: 700; }
+
+/* ---------- confetti ---------- */
+.confetti {
+  position: fixed; inset: 0; z-index: 60;
+  pointer-events: none; overflow: hidden;
+}
+.confetti__bit {
+  position: absolute; top: -50px;
+  animation-name: fall; animation-timing-function: linear; animation-fill-mode: forwards;
+}
+@keyframes fall {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  8%   { opacity: 1; }
+  100% { transform: translate(var(--drift, 0), 112vh) rotate(var(--spin, 360deg)); opacity: .15; }
+}
+
+/* ============================================================
+   8. MODAL
+   ============================================================ */
+
+body.modal-open { overflow: hidden; }
+
+.modal { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 20px; }
+
+.modal__backdrop {
+  position: absolute; inset: 0;
+  background: rgba(6, 22, 30, .7);
+  backdrop-filter: blur(3px);
+  animation: fadein .3s ease both;
+}
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+.modal__panel {
+  position: relative;
+  width: min(100%, 480px);
+  max-height: calc(100vh - 40px); overflow-y: auto;
+  background: linear-gradient(170deg, var(--paper), #f2eddd);
+  color: var(--ink);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255,255,255,.6);
+  box-shadow: 0 40px 90px -30px rgba(0,0,0,.7);
+  padding: clamp(24px, 5vw, 36px);
+  text-align: center;
+  animation: popin .42s cubic-bezier(.2, 1.2, .35, 1) both;
+}
+@keyframes popin {
+  from { opacity: 0; transform: translateY(24px) scale(.94); }
+  to   { opacity: 1; transform: none; }
+}
+
+.modal__icon { font-size: 2.8rem; line-height: 1; margin-bottom: 10px; }
+.modal__title {
+  font-family: var(--serif); font-size: clamp(1.4rem, 4vw, 1.85rem);
+  margin: 0 0 18px; color: var(--lake-700);
+}
+
+.modal__body {
+  margin: 0 0 16px; font-size: 1rem; line-height: 1.6; color: #474f4d;
+}
+
+.modal__note {
+  margin: 0 0 20px; padding: 10px 14px;
+  background: rgba(217, 139, 74, .14);
+  border-left: 3px solid var(--dawn);
+  border-radius: 0 8px 8px 0;
+  text-align: left; font-size: .87rem; line-height: 1.5; color: #6a6459;
+}
+
+.modal__actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+/* ============================================================
+   9. RESPONSIVE / MOTION / PRINT
+   ============================================================ */
+
+@media (max-width: 540px) {
+  .nav { flex-direction: column-reverse; align-items: stretch; }
+  .nav .btn--primary { margin-left: 0; }
+  .tally__row { grid-template-columns: 118px 1fr 28px; }
+  #keyhint { display: none; }
+  .choice__box { padding: 13px 14px; gap: 11px; }
+  .driftfall span:nth-child(n+4) { display: none; }
+  .reeds--left { display: none; }
+  .sun { width: 62px; height: 62px; right: 12vw; }
+  .sheen { width: 90px; right: 9vw; }
+  textarea { min-height: 200px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  .card--result::before, .driftfall, .ripples, .skimmers { display: none; }
+}
+
+/* the printout / PDF — hidden on screen, the only thing that prints */
+#print-sheet { display: none; }
+
+@media print {
+  @page { margin: 0.6in; }
+
+  html, body {
+    background: #fff !important; color: #000 !important;
+    height: auto; overflow: visible;
+  }
+
+  /* everything the student sees is screen-only */
+  .lakeside, .confetti, .stage, .modal, .motion-toggle, .no-print { display: none !important; }
+
+  #print-sheet {
+    display: block;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 11.5pt; line-height: 1.5; color: #000;
+  }
+
+  .sheet__head { border-bottom: 2px solid #000; padding-bottom: 10pt; margin-bottom: 16pt; }
+  .sheet__head h1 { font-size: 19pt; margin: 0 0 10pt; letter-spacing: -.01em; }
+
+  .sheet__meta { border-collapse: collapse; font-size: 10.5pt; }
+  .sheet__meta th {
+    text-align: left; padding: 1pt 14pt 1pt 0;
+    font-size: 8.5pt; letter-spacing: .1em; text-transform: uppercase;
+    color: #444; vertical-align: top; white-space: nowrap;
+  }
+  .sheet__meta td { padding: 1pt 0; }
+
+  .sheet__list { margin: 0; padding-left: 20pt; }
+  .sheet__item { margin-bottom: 15pt; page-break-inside: avoid; }
+  .sheet__item--long { page-break-inside: auto; }
+  .sheet__list li::marker { font-weight: bold; }
+
+  .sheet__q { margin: 0 0 3pt; font-weight: bold; }
+  .sheet__req { margin: 0 0 5pt; font-size: 9pt; font-style: italic; color: #555; }
+  .sheet__a {
+    margin: 0; white-space: pre-wrap;
+    padding-left: 9pt; border-left: 2pt solid #bbb;
+    orphans: 3; widows: 3;
+  }
+  .sheet__a--empty { color: #777; font-style: italic; border-left-color: #ddd; }
+}

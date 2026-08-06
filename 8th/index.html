@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lake Life!</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛶</text></svg>" />
+</head>
+<body>
+  <!-- decorative background -->
+  <div class="lakeside" aria-hidden="true">
+    <div class="dawnglow"></div>
+    <div class="sun"></div>
+    <div class="ridge ridge--far"></div>
+    <div class="ridge ridge--near"></div>
+    <div class="lake">
+      <div class="sheen"></div>
+      <div class="ripples">
+        <i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <div class="mist"></div>
+    </div>
+    <div class="reeds reeds--left">
+      <span class="reed"></span><span class="reed"></span><span class="reed"></span>
+    </div>
+    <div class="reeds reeds--right">
+      <span class="reed"></span><span class="reed"></span><span class="reed"></span><span class="reed"></span>
+    </div>
+    <div class="skimmers">
+      <i></i><i></i><i></i><i></i>
+    </div>
+    <div class="driftfall">
+      <span>🍃</span><span>🍂</span><span>🍃</span><span>🌾</span><span>🍂</span><span>🍃</span>
+    </div>
+  </div>
+
+  <div class="confetti" id="confetti" aria-hidden="true"></div>
+
+  <main class="stage">
+
+    <!-- ───────────────────── START ───────────────────── -->
+    <section id="screen-start" class="screen is-active">
+      <div class="card card--intro">
+        <p class="eyebrow">A personality quiz</p>
+        <h1 class="title">Lake <em>Life!</em></h1>
+        <p class="lede">
+          Grab a towel and head down to the water. Fifteen questions — some you
+          pick, some you write. At the end you’ll find out whether you’re
+          <strong>Driftwood</strong>, a <strong>Lily Pad</strong>,
+          a <strong>Duck</strong>, or a <strong>Canoe</strong>.
+        </p>
+
+        <form id="start-form" class="start-form" novalidate>
+          <label class="field">
+            <span class="field__label">Your name</span>
+            <input id="student-name" name="name" type="text" autocomplete="name"
+                   placeholder="First and last name" required />
+          </label>
+          <p id="start-error" class="error" role="alert" hidden></p>
+          <button type="submit" class="btn btn--primary btn--big">Push off from the dock →</button>
+        </form>
+
+        <p id="resume-note" class="resume" hidden>
+          Found saved answers from earlier.
+          <button type="button" id="resume-btn" class="linkbtn">Pick up where you left off</button>
+          ·
+          <button type="button" id="discard-btn" class="linkbtn linkbtn--quiet">Start over</button>
+        </p>
+      </div>
+    </section>
+
+    <!-- ───────────────────── QUIZ ───────────────────── -->
+    <section id="screen-quiz" class="screen">
+      <header class="quizbar">
+        <div class="quizbar__row">
+          <span class="counter">Question <b id="q-current">1</b> of <b id="q-total">15</b></span>
+          <span id="q-kind" class="pill">Multiple choice</span>
+        </div>
+        <p class="section-label" id="q-section" hidden></p>
+        <div class="trail">
+          <div class="trail__track">
+            <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                 aria-valuenow="0" aria-label="Quiz progress">
+              <div class="progress__fill" id="progress-fill"></div>
+            </div>
+            <span class="trail__walker" id="trail-walker"><b>🛶</b></span>
+          </div>
+          <span class="trail__goal">🏕️</span>
+        </div>
+      </header>
+
+      <div class="card card--question" id="question-card">
+        <form id="question-form" novalidate>
+          <h2 class="question" id="question-text"></h2>
+          <div class="directions" id="directions" hidden>
+            <p class="directions__text" id="question-prompt"></p>
+            <p class="directions__req" id="question-req"></p>
+          </div>
+
+          <!-- choices get injected here -->
+          <div class="choices" id="choices" role="radiogroup" aria-labelledby="question-text"></div>
+
+          <!-- written response -->
+          <div class="written" id="written" hidden>
+            <textarea id="answer-text" rows="9" spellcheck="true"></textarea>
+            <p class="nopaste" id="nopaste" role="alert" hidden>
+              🔒 Copy and paste are turned off — please type your answer in your own words.
+            </p>
+          </div>
+
+          <p id="q-error" class="error" role="alert" hidden></p>
+
+          <div class="nav">
+            <button type="button" id="back-btn" class="btn btn--ghost">← Back</button>
+            <button type="submit" id="next-btn" class="btn btn--primary">Next →</button>
+          </div>
+        </form>
+      </div>
+
+      <p class="hint" id="keyhint">Tip: press <kbd>1</kbd>–<kbd>4</kbd> to choose, <kbd>Enter</kbd> to continue.</p>
+    </section>
+
+    <!-- ───────────────────── RESULTS ───────────────────── -->
+    <section id="screen-results" class="screen">
+      <div class="card card--result">
+        <div class="result__badge" id="result-emoji">🛶</div>
+        <p class="eyebrow" id="result-for"></p>
+        <h1 class="result__title" id="result-heading"></h1>
+        <p class="result__desc" id="result-desc"></p>
+
+        <div class="tally" id="tally"></div>
+
+        <div class="result__actions">
+          <button type="button" id="pdf-btn" class="btn btn--primary btn--big">⬇ Save my answers as a PDF</button>
+        </div>
+        <p class="turnin">
+          This is the last step — save the PDF and turn it in so your teacher
+          gets your written answers.
+        </p>
+
+        <div class="result__secondary">
+          <button type="button" id="trouble-btn" class="btn btn--ghost">PDF not working?</button>
+        </div>
+      </div>
+
+      <!-- only opened by the "PDF not working?" button -->
+      <div class="card card--fallback" id="fallback" hidden>
+        <h2 class="fallback__title">Backup plan</h2>
+        <p class="fallback__lede">
+          If the PDF won’t save, use the image instead. It saves every answer
+          below as one tall picture you can upload to Schoology.
+        </p>
+
+        <div class="fallback__actions">
+          <button type="button" id="png-btn" class="btn btn--primary">🖼️ Save all my answers as a PNG</button>
+          <button type="button" id="print-btn" class="btn btn--ghost">Use the print dialog instead</button>
+        </div>
+
+        <div class="helpnote" id="helpnote">
+          <p class="helpnote__title">⚠️ If neither one works</p>
+          <p class="helpnote__body">
+            Don’t close this tab. Tell <span id="teacher-name">your teacher</span>
+            right away<span id="teacher-contact"></span> so your work doesn’t get lost —
+            they can help you save it another way.
+          </p>
+        </div>
+
+        <h3 class="fallback__subtitle">Everything you wrote</h3>
+        <ol class="answers" id="answers"></ol>
+      </div>
+
+      <p class="danger-zone no-print">
+        Want to start over fresh?
+        <button type="button" id="restart-btn" class="linkbtn linkbtn--danger">Hit this button</button>
+      </p>
+    </section>
+
+  </main>
+
+  <!-- ─────────────── final submission check ─────────────── -->
+  <div class="modal no-print" id="confirm-modal" hidden>
+    <div class="modal__backdrop" data-close="confirm"></div>
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <div class="modal__icon">📄</div>
+      <h2 class="modal__title" id="confirm-title">Ready to export your PDF?</h2>
+      <p class="modal__body">
+        You’ve answered all 15 questions. Next you’ll see your lakeside
+        personality and save your answers as a PDF to turn in.
+      </p>
+      <p class="modal__note">
+        Want to fix an answer first? Choose <i>Let me check again</i> and use the
+        <b>Back</b> button to look through your answers.
+      </p>
+      <div class="modal__actions">
+        <button type="button" class="btn btn--primary" id="confirm-yes">Yes — I’m ready</button>
+        <button type="button" class="btn btn--ghost" data-close="confirm">Let me check again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Never shown on screen. This is what the PDF / printout is made of. -->
+  <article id="print-sheet" aria-hidden="true">
+    <header class="sheet__head">
+      <h1>Lake Life! — Discover Your Lakeside Personality</h1>
+      <table class="sheet__meta">
+        <tr><th>Name</th><td id="print-name"></td></tr>
+        <tr><th>Completed</th><td id="print-date"></td></tr>
+        <tr><th>Result</th><td id="print-result"></td></tr>
+        <tr><th>Points</th><td id="print-tally"></td></tr>
+      </table>
+    </header>
+    <ol class="sheet__list" id="print-list"></ol>
+  </article>
+
+  <button type="button" id="motion-toggle" class="motion-toggle no-print" aria-pressed="false">
+    <span class="motion-toggle__dot" aria-hidden="true"></span>
+    <span id="motion-label">Stop animations</span>
+  </button>
+
+  <script src="questions.js"></script>
+  <script src="pdf.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
